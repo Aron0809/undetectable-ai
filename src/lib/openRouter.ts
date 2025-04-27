@@ -1,9 +1,21 @@
 import OpenAI from 'openai';
 
+// 使用服务器端密钥
+let apiKey: string;
+
+// 检查当前环境并使用服务器端环境变量
+if (typeof window === 'undefined') {
+  // 服务器端环境
+  apiKey = process.env.OPENROUTER_API_KEY || '';
+} else {
+  // 客户端环境
+  apiKey = process.env.NEXT_PUBLIC_OPENROUTER_API_KEY || '';
+}
+
 // 创建OpenRouter客户端实例
 const openRouter = new OpenAI({
   baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: process.env.NEXT_PUBLIC_OPENROUTER_API_KEY || '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',
+  apiKey: apiKey,
   defaultHeaders: {
     'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
     'X-Title': 'Undetectable.AI',
