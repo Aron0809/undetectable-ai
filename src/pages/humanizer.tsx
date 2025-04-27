@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '../components/layout/Layout';
-import { humanizeAIContent, detectAIContent } from '../lib/openRouter';
+import axios from 'axios';
 
 // 定义可用语言选项
 const languages = [
@@ -175,9 +175,17 @@ export default function Humanizer() {
     setError('');
     
     try {
-      const result = await detectAIContent(inputText, selectedLanguage);
-      setAiDetectionRate(result.score);
-      setIsInputAnalyzed(true);
+      const response = await axios.post('/api/content/detect', {
+        text: inputText,
+        language: selectedLanguage
+      });
+      
+      if (response.data.success && response.data.data) {
+        setAiDetectionRate(response.data.data.score);
+        setIsInputAnalyzed(true);
+      } else {
+        throw new Error('Invalid response from API');
+      }
     } catch (err) {
       console.error('分析错误:', err);
       setError(text.analysisError);
@@ -205,18 +213,22 @@ export default function Humanizer() {
       }
       
       // 调用人性化API
-      const humanizedText = await humanizeAIContent(inputText, {
-        intensity,
-        preserveMeaning: preserveFormatting,
-        style: selectedStyle,
-        language: selectedLanguage
+      const response = await axios.post('/api/content/humanize', {
+        text: inputText,
+        options: {
+          intensity,
+          retainMeaning: preserveFormatting,
+          style: selectedStyle,
+          language: selectedLanguage
+        }
       });
       
-      // 模拟处理后的AI检测率
-      const detectionRateAfter = Math.floor(Math.random() * (15 - 1 + 1)) + 1; // 1-15%
-      
-      setOutputText(humanizedText);
-      setHumanizedWordCount(humanizedText.trim().split(/\s+/).length);
+      if (response.data.success && response.data.data) {
+        setOutputText(response.data.data.humanizedText);
+        setHumanizedWordCount(response.data.data.humanizedText.trim().split(/\s+/).length);
+      } else {
+        throw new Error('Invalid response from API');
+      }
       
     } catch (err) {
       console.error('人性化处理错误:', err);

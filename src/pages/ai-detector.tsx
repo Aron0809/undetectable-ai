@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Layout from '../components/layout/Layout';
-import { detectAIContent } from '../lib/openRouter';
+import axios from 'axios';
 
 // 支持的语言选项
 const languages = [
@@ -31,14 +31,22 @@ export default function AIDetector() {
     setError('');
     
     try {
-      const response = await detectAIContent(inputText, selectedLanguage);
-      
-      setResult({
-        score: response.score,
-        humanPercent: 100 - response.score,
-        aiPercent: response.score,
-        analysis: response.analysis
+      const response = await axios.post('/api/content/detect', {
+        text: inputText,
+        language: selectedLanguage
       });
+      
+      if (response.data.success && response.data.data) {
+        const data = response.data.data;
+        setResult({
+          score: data.score,
+          humanPercent: 100 - data.score,
+          aiPercent: data.score,
+          analysis: data.analysis
+        });
+      } else {
+        throw new Error('Invalid response from API');
+      }
     } catch (err) {
       console.error('检测错误:', err);
       setError('内容检测失败，请稍后再试。');
