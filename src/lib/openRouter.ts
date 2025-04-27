@@ -3,7 +3,7 @@ import OpenAI from 'openai';
 // 创建OpenRouter客户端实例
 const openRouter = new OpenAI({
   baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: process.env.NEXT_PUBLIC_OPENROUTER_API_KEY || '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',
+  apiKey: process.env.NEXT_PUBLIC_OPENROUTER_API_KEY || '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',
   defaultHeaders: {
     'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
     'X-Title': 'Undetectable.AI',
