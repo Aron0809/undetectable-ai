@@ -236,6 +236,19 @@ const getHumanizeUserPromptByLanguage = (text: string, language: string = 'zh'):
   return prompts[language] || prompts.en;
 };
 
+// 默认的人性化失败回退消息
+const getHumanizeErrorMessage = (language: string): string => {
+  const messages: Record<string, string> = {
+    zh: '很抱歉，人性化处理失败。请重试或缩短文本后再试。原始文本已保留：',
+    en: 'Sorry, the humanization process failed. Please try again or try with a shorter text. Original text preserved:',
+    es: 'Lo sentimos, el proceso de humanización falló. Por favor, inténtelo de nuevo o pruebe con un texto más corto. Texto original conservado:',
+    fr: 'Désolé, le processus d\'humanisation a échoué. Veuillez réessayer ou essayer avec un texte plus court. Texte original conservé:',
+    de: 'Entschuldigung, der Humanisierungsprozess ist fehlgeschlagen. Bitte versuchen Sie es erneut oder versuchen Sie es mit einem kürzeren Text. Originaltext erhalten:'
+  };
+  
+  return messages[language] || messages.en;
+};
+
 // AI内容人性化服务
 export const humanizeAIContent = async (
   text: string, 
@@ -248,38 +261,61 @@ export const humanizeAIContent = async (
 ): Promise<string> => {
   const language = options.language || 'zh';
   
-  // 创建缓存键
-  const cacheKey = `${text.substring(0, 100)}_${language}_${options.intensity}_${options.preserveMeaning}_${options.style}`;
+  // 创建缓存键 - 将布尔值转换为字符串以确保一致性
+  const cacheKey = `${text.substring(0, 100)}_${language}_${options.intensity}_${String(options.preserveMeaning)}_${options.style || 'default'}`;
   
   // 检查缓存
   if (humanizationCache.has(cacheKey)) {
     return humanizationCache.get(cacheKey)!;
   }
   
-  try {
-    const response = await openRouter.chat.completions.create({
-      model: 'meta-llama/llama-4-maverick:free',
-      messages: [
-        {
-          role: 'system',
-          content: getHumanizeSystemPromptByLanguage(options, language)
-        },
-        {
-          role: 'user',
-          content: getHumanizeUserPromptByLanguage(text, language)
-        }
-      ],
-      temperature: 0.7, // 人性化需要一定的创造性，因此temperature设置较高
-    });
-
-    const result = response.choices[0].message.content || '';
-    
-    // 缓存结果
-    humanizationCache.set(cacheKey, result);
-    
-    return result;
-  } catch (error) {
-    console.error('AI内容人性化失败:', error);
-    throw error;
+  // 最大重试次数
+  let attempts = 0;
+  const maxAttempts = 2;
+  
+  while (attempts < maxAttempts) {
+    try {
+      // 创建人性化请求
+      const response = await openRouter.chat.completions.create({
+        model: 'meta-llama/llama-4-maverick:free',
+        messages: [
+          {
+            role: 'system',
+            content: getHumanizeSystemPromptByLanguage(options, language)
+          },
+          {
+            role: 'user',
+            content: getHumanizeUserPromptByLanguage(text, language)
+          }
+        ],
+        temperature: 0.7, // 人性化需要一定的创造性，因此temperature设置较高
+      });
+  
+      // 获取结果
+      const result = response.choices[0].message.content || '';
+      
+      // 验证结果不为空
+      if (!result.trim()) {
+        throw new Error('Empty response from API');
+      }
+      
+      // 缓存结果
+      humanizationCache.set(cacheKey, result);
+      
+      return result;
+    } catch (error) {
+      attempts++;
+      console.error(`人性化处理尝试${attempts}/${maxAttempts}失败:`, error);
+      
+      if (attempts < maxAttempts) {
+        // 等待短暂时间后重试，重试时间比检测略长
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
+    }
   }
+  
+  // 所有尝试都失败时，返回错误消息和原始文本
+  // 这比抛出错误更友好，用户至少能看到他们的原文
+  const fallbackResult = `${getHumanizeErrorMessage(language)}\n\n${text}`;
+  return fallbackResult;
 }; 
