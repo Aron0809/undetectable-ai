@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button, Card, Input, Slider, Radio, message } from 'antd';
-import { detectAIContent, humanizeAIContent } from '@/utils/openrouter';
+import { detectAIContent, humanizeAIContent } from '../lib/openRouter';
 import type { RadioChangeEvent } from 'antd/es/radio';
 
 const { TextArea } = Input;
@@ -13,7 +13,7 @@ interface AIContentToolsProps {
 const AIContentTools: React.FC<AIContentToolsProps> = ({ className }) => {
   const [text, setText] = useState<string>('');
   const [resultText, setResultText] = useState<string>('');
-  const [detectionResult, setDetectionResult] = useState<{ score: number; confidence: number } | null>(null);
+  const [detectionResult, setDetectionResult] = useState<{ score: number; isAI: boolean; analysis: string } | null>(null);
   const [intensity, setIntensity] = useState<number>(0.7);
   const [language, setLanguage] = useState<string>('zh');
   const [style, setStyle] = useState<string>('casual');
@@ -28,7 +28,7 @@ const AIContentTools: React.FC<AIContentToolsProps> = ({ className }) => {
 
     setLoading(true);
     try {
-      const result = await detectAIContent(text);
+      const result = await detectAIContent(text, language);
       setDetectionResult(result);
       message.success('检测完成');
     } catch (error) {
@@ -46,7 +46,23 @@ const AIContentTools: React.FC<AIContentToolsProps> = ({ className }) => {
 
     setLoading(true);
     try {
-      const humanized = await humanizeAIContent(text, intensity, language, style);
+      // 将滑块值转换为low/medium/high强度
+      let intensityValue: 'low' | 'medium' | 'high';
+      if (intensity <= 0.3) {
+        intensityValue = 'low';
+      } else if (intensity <= 0.7) {
+        intensityValue = 'medium';
+      } else {
+        intensityValue = 'high';
+      }
+
+      const humanized = await humanizeAIContent(text, {
+        intensity: intensityValue,
+        preserveMeaning: true,
+        style,
+        language
+      });
+
       setResultText(humanized);
       message.success('处理完成');
     } catch (error) {
@@ -90,8 +106,14 @@ const AIContentTools: React.FC<AIContentToolsProps> = ({ className }) => {
 
           {detectionResult && (
             <div className="mt-4 p-4 bg-gray-50 rounded">
-              <p>AI生成概率: <span className="font-bold">{(detectionResult.score * 100).toFixed(2)}%</span></p>
-              <p>置信度: <span className="font-bold">{(detectionResult.confidence * 100).toFixed(2)}%</span></p>
+              <p>AI生成概率: <span className="font-bold">{detectionResult.score}%</span></p>
+              <p>分析结果: <span className="font-bold">{detectionResult.isAI ? '可能是AI生成' : '可能是人类撰写'}</span></p>
+              {detectionResult.analysis && (
+                <div className="mt-2">
+                  <p className="font-semibold">详细分析:</p>
+                  <p className="whitespace-pre-line">{detectionResult.analysis}</p>
+                </div>
+              )}
             </div>
           )}
         </>
