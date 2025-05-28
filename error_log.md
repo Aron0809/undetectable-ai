@@ -629,3 +629,109 @@
 - 遵循Next.js版本更新指南
 - 分离viewport和metadata配置
 - 保持依赖版本同步 
+
+## 2024-12-21 - 路由冲突重大修复
+
+#### 问题诊断
+**症状**: 从二级页面点击回到主页时，主页显示异常，仅显示文字内容，丢失所有样式和组件结构
+
+**根本原因**: Next.js混合路由系统冲突
+1. **路由冲突**: 项目同时存在App Router (`src/app/`) 和 Pages Router (`src/pages/`)
+2. **样式冲突**: 两套独立的CSS系统
+   - App Router使用: `src/app/globals.css`
+   - Pages Router使用: `src/styles/globals.css`
+3. **布局冲突**: 不同的布局组件系统
+   - App Router: `src/app/layout.tsx` + Navbar/Footer
+   - Pages Router: `src/components/layout/Layout.tsx` + Header/Footer
+
+#### 修复措施
+
+1. **清理Pages Router残留文件**
+   ```
+   删除文件:
+   - src/pages/_app.tsx (Pages Router应用配置)
+   - src/pages/_document.tsx (Pages Router文档配置)
+   - src/pages/pricing.tsx (与App Router版本冲突)
+   - src/pages/faq.tsx (与App Router版本冲突)
+   - src/pages/how-it-works.tsx
+   - src/pages/test-shadcn.tsx
+   - src/pages/signup.tsx
+   - src/pages/login.tsx
+   - src/pages/dashboard.tsx
+   - src/pages/forgot-password.tsx
+   - src/pages/settings.tsx
+   - src/styles/globals.css (旧样式文件)
+   - src/styles/ (空目录)
+   - src/components/layout/Layout.tsx (Pages Router布局)
+   - src/components/layout/Header.tsx (未使用组件)
+   ```
+
+2. **确保App Router页面完整性**
+   ```
+   App Router页面结构:
+   src/app/
+   ├── layout.tsx (根布局 + Navbar + Footer)
+   ├── page.tsx (首页)
+   ├── globals.css (统一样式)
+   ├── pricing/page.tsx (定价页面)
+   ├── faq/page.tsx (FAQ页面)
+   ├── humanizer/page.tsx
+   ├── ai-detector/page.tsx
+   ├── blog/page.tsx
+   ├── contact/page.tsx
+   ├── privacy/page.tsx
+   └── terms/page.tsx
+   ```
+
+3. **迁移Pages Router内容到App Router**
+   - 将`src/pages/pricing.tsx`迁移到`src/app/pricing/page.tsx`
+   - 将`src/pages/faq.tsx`迁移到`src/app/faq/page.tsx`
+   - 移除Layout包装，改用App Router的layout.tsx
+   - 保留客户端状态管理 (`'use client'`)
+
+4. **保留API路由** (仍在Pages Router中)
+   ```
+   保留文件:
+   src/pages/api/
+   ├── content/
+   │   ├── detect.ts
+   │   └── humanize.ts
+   └── index.ts
+   ```
+
+#### 验证结果
+
+1. **构建测试**: ✅通过
+   ```
+   Route (app)                    Size     First Load JS
+   ├ ○ /                         5.05 kB         103 kB
+   ├ ○ /pricing                  150 B          87.3 kB
+   ├ ○ /faq                      3.04 kB        90.2 kB
+   └ ... (其他页面)
+   
+   Route (pages)                 Size     First Load JS
+   ├ ƒ /api/content              0 B            80.8 kB
+   ├ ƒ /api/content/detect       0 B            80.8 kB
+   └ ƒ /api/content/humanize     0 B            80.8 kB
+   ```
+
+2. **路由系统**: ✅统一为App Router (除API)
+3. **样式系统**: ✅统一使用`src/app/globals.css`
+4. **布局系统**: ✅统一使用`src/app/layout.tsx`
+
+#### 影响和改进
+- **用户体验**: 修复了页面跳转异常的问题
+- **开发体验**: 统一了路由系统，减少混乱
+- **维护性**: 简化了项目结构，便于后续开发
+- **性能**: 移除了重复的样式和组件加载
+
+#### 经验教训
+1. **混合路由谨慎**: Next.js虽然支持混合路由，但需要careful配置
+2. **迁移要彻底**: 从Pages Router迁移到App Router时，需要完全清理旧文件
+3. **API路由例外**: API路由可以保留在Pages Router中，不影响前端路由
+4. **测试要全面**: 路由修复后需要测试所有页面跳转功能
+
+**状态**: ✅已完成 - 路由冲突完全解决
+
+ 
+ 

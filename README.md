@@ -184,6 +184,18 @@
       - 避免与layout中的全局组件冲突
       - 简化页面组件结构
 
+18. **重大路由修复 (2024-12-21)**
+    - **问题解决**: 修复了从二级页面返回主页时丢失样式和结构的严重问题
+    - **根本原因**: Next.js混合路由系统冲突 (App Router + Pages Router)
+    - **修复措施**:
+      - 完全清理Pages Router残留文件 (_app.tsx, _document.tsx等)
+      - 统一路由系统为App Router (除API路由)
+      - 统一样式系统 (使用src/app/globals.css)
+      - 统一布局系统 (使用src/app/layout.tsx)
+      - 迁移pricing和faq页面到App Router
+    - **验证结果**: 构建测试通过，所有页面路由正常工作
+    - **影响**: 显著提升用户体验，简化项目结构
+
 ### 下一步开发计划
 
 1. **继续Pages Router到App Router迁移**
@@ -245,3 +257,5 @@
    - Hero区域使用相同的梯度背景
    - 卡片和按钮样式保持一致
    - 图标系统统一使用Lucide React 
+ 
+ 
