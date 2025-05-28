@@ -1,0 +1,53 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# API Integration and Security Requirements
+
+## OpenRouter API Integration
+Reference implementation: [src/lib/openRouter.ts](mdc:src/lib/openRouter.ts)
+
+### Environment Setup
+Required environment variables in `.env.local`:
+```env
+OPENROUTER_API_KEY=your_api_key_here
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+```
+
+### API Functions
+- `detectAIContent`: AI content detection
+- `humanizeAIContent`: Content humanization
+All functions must implement:
+- Server-side execution only
+- Request caching
+- Error handling with retries
+- Type safety
+- Response validation
+
+### Security Requirements
+1. API Key Protection
+   - Never expose API keys in client code
+   - Use environment variables
+   - Implement key rotation mechanism
+
+2. Request Validation
+   - Validate input length and content
+   - Implement rate limiting
+   - Check authentication when required
+
+3. Error Handling
+   - Log all API errors
+   - Implement graceful fallbacks
+   - Use custom error types
+
+4. Performance
+   - Cache API responses
+   - Implement request debouncing
+   - Monitor API usage
+
+### Testing Requirements
+- Unit test all API functions
+- Mock external API calls in tests
+- Test error scenarios
+- Validate response types

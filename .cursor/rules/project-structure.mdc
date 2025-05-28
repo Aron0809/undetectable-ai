@@ -1,0 +1,43 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Project Structure and Coding Standards
+
+## Core Files
+- Main configuration and API integration: [src/lib/openRouter.ts](mdc:src/lib/openRouter.ts)
+- Project documentation: [README.md](mdc:README.md)
+- Project planning: [undetectable_ai_website_plan.md](mdc:undetectable_ai_website_plan.md)
+
+## Coding Standards
+
+### TypeScript Usage
+- All new files must use TypeScript
+- Maintain strict type checking
+- Define interfaces for all API responses and requests
+- Use type annotations for function parameters and return values
+
+### API Integration
+- All API calls must be server-side only
+- Use environment variables for sensitive data
+- Implement proper error handling and retries
+- Cache responses when appropriate
+
+### File Organization
+- Keep components in `/app/components`
+- Place API routes in `/app/api`
+- Store utilities in `/lib`
+- Maintain clear separation between client and server code
+
+### Code Style
+- Use ES6+ features
+- Implement proper error handling
+- Add JSDoc comments for complex functions
+- Follow TailwindCSS class naming conventions
+
+### Security
+- No client-side API keys
+- Validate all user inputs
+- Implement rate limiting
+- Use proper CORS settings
